@@ -16,6 +16,10 @@ inputs:
     description: Vercel's "Protection Bypass for Automation" secret, for previews behind deployment protection. Sent only to the deployment's own host.
     required: false
     default: ""
+  test-plan:
+    description: Steps in plain English, one per line, to walk instead of the main flow (e.g. "Open pricing", "Check Starter costs $10 a month"). Up to 15 steps.
+    required: false
+    default: ""
   fail-on:
     description: "failed: fail this step when the walk finds the flow broken (default). never: report only."
     required: false
@@ -50,6 +54,7 @@ runs:
         PC_API_KEY: ${{ inputs.api-key }}
         PC_URL: ${{ inputs.url || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
         PC_BYPASS: ${{ inputs.vercel-bypass-secret }}
+        PC_PLAN: ${{ inputs.test-plan }}
         PC_FAIL_ON: ${{ inputs.fail-on }}
         PC_TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
         PC_API_BASE: ${{ inputs.api-base }}

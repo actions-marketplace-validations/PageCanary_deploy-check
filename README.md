@@ -34,9 +34,24 @@ Anywhere else, pass `url:` and run it after your deploy step.
 | `api-key` | required | PageCanary API key |
 | `url` | the deployment's URL (`deployment_status` events) | Site to walk |
 | `vercel-bypass-secret` | | For protected Vercel previews |
+| `test-plan` | none | Steps in plain English, one per line, to walk instead of the main flow |
 | `fail-on` | `failed` | `never` to report without failing |
 | `timeout-minutes` | `6` | How long to wait |
 | `api-base` | `https://www.pagecanary.com` | PageCanary's API |
+
+## Your own steps
+
+```yaml
+      - uses: pagecanary/deploy-check@v1
+        with:
+          api-key: ${{ secrets.PAGECANARY_API_KEY }}
+          test-plan: |
+            Open the pricing page
+            Choose the Starter plan
+            Check the checkout shows $10 a month
+```
+
+Each step passes only when the agent sees it happen on the page, and the job summary shows every step's result. It still never pays, creates an account, sends personal details or leaves your site.
 
 ## Outputs
 

@@ -23,7 +23,8 @@ soft_fail() { # PageCanary couldn't run the check: say so, don't block the deplo
 if [ -z "${PC_API_KEY:-}" ]; then echo "::error::api-key is required (store your PageCanary API key as a secret)."; exit 1; fi
 if [ -z "$url" ]; then echo "::error::No URL to walk. Set the url input, or run the workflow on deployment_status."; exit 1; fi
 
-body=$(jq -n --arg url "$url" --arg secret "${PC_BYPASS:-}" '{url: $url} + (if $secret == "" then {} else {vercelBypassSecret: $secret} end)')
+body=$(jq -n --arg url "$url" --arg secret "${PC_BYPASS:-}" --arg plan "${PC_PLAN:-}" \
+  '{url: $url} + (if $secret == "" then {} else {vercelBypassSecret: $secret} end) + (if ($plan | test("\\S")) then {plan: $plan} else {} end)')
 started=$(curl -sS --max-time 30 -X POST "$api/api/v1/walks" -H "Authorization: Bearer $PC_API_KEY" -H "Content-Type: application/json" -d "$body" -w '\n%{http_code}') \
   || soft_fail "Couldn't reach PageCanary to start the walk."
 code=$(tail -n1 <<<"$started"); json=$(sed '$d' <<<"$started")
@@ -61,7 +62,14 @@ esac
   [ -n "$detail" ] && echo "" && echo "$detail"
   echo ""
   echo "Walked $url"
-  jq -r '.walk.steps | to_entries[] | "\(.key + 1). \(.value.text)"' <<<"$walk"
+  if [ "$(jq -r '.walk.planSteps | length' <<<"$walk" 2>/dev/null)" -gt 0 ] 2>/dev/null; then
+    echo ""
+    echo "| Step | Result | What we saw |"
+    echo "|---|---|---|"
+    jq -r '.walk.planSteps | to_entries[] | "| \(.key + 1). \(.value.step | gsub("\\|"; "/")) | \({passed: "Passed", failed: "Failed", blocked: "Couldn'"'"'t do", "not-run": "Not run"}[.value.status] // .value.status) | \(.value.detail | gsub("\\|"; "/")) |"' <<<"$walk"
+  else
+    jq -r '.walk.steps | to_entries[] | "\(.key + 1). \(.value.text)"' <<<"$walk"
+  fi
   [ -n "$video" ] && echo "" && echo "[Watch the recording]($video)"
 } >> "$summary"
 echo "$headline"
